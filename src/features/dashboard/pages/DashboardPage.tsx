@@ -217,12 +217,12 @@ function ProgressSection({
 
 function QuickActions({ items }: { items: DashboardActionItem[] }) {
   return (
-    <div className="flex flex-wrap items-center gap-3">
+    <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-center sm:gap-3">
       {items.map((item) => (
         <Link
           key={item.id}
           to={item.path}
-          className="inline-flex items-center rounded-xl border border-[rgba(123,97,63,0.12)] bg-white/85 px-3 py-2 text-sm font-semibold leading-none text-slate-900 transition hover:-translate-y-0.5 hover:bg-white"
+          className="inline-flex min-h-10 items-center justify-center rounded-2xl border border-[rgba(123,97,63,0.12)] bg-white/85 px-2.5 py-2 text-center text-[13px] font-semibold text-slate-900 transition hover:-translate-y-0.5 hover:bg-white sm:min-h-0 sm:rounded-xl sm:px-3 sm:py-2 sm:text-sm sm:leading-none"
         >
           {item.label}
         </Link>
@@ -287,7 +287,7 @@ export default function DashboardPage() {
         </DashboardSection>
       }
       summaryCards={
-        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2 md:grid-cols-2 md:gap-3 xl:grid-cols-4">
           {data.summaryCards.map((card) => (
             <DashboardCard
               key={card.id}

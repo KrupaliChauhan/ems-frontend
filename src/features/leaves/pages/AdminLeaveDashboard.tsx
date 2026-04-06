@@ -94,11 +94,11 @@ export default function AdminLeaveDashboard() {
         <Loader variant="block" label="Loading leave operations..." />
       ) : (
         <>
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-2 md:gap-4 xl:grid-cols-5">
             {cards.map((card) => (
-              <div key={card.label} className={`rounded-3xl px-5 py-5 shadow-sm ${card.tone}`}>
-                <p className="text-xs uppercase tracking-[0.2em] opacity-80">{card.label}</p>
-                <p className="mt-3 text-3xl font-semibold">{card.value}</p>
+              <div key={card.label} className={`rounded-3xl px-4 py-4 shadow-sm md:px-5 md:py-5 ${card.tone}`}>
+                <p className="text-[10px] uppercase tracking-[0.16em] opacity-80 md:text-xs md:tracking-[0.2em]">{card.label}</p>
+                <p className="mt-2 text-2xl font-semibold md:mt-3 md:text-3xl">{card.value}</p>
               </div>
             ))}
           </div>

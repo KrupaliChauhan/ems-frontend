@@ -14,7 +14,7 @@ export default function DashboardLayout({
   bottom,
 }: DashboardLayoutProps) {
   return (
-    <div className="space-y-4">
+    <div className="space-y-3 md:space-y-4">
       {top ? <section>{top}</section> : null}
       <section>{summaryCards}</section>
       <section>{middle}</section>

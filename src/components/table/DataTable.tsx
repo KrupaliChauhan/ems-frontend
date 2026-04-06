@@ -191,7 +191,63 @@ function DataTable<T extends { id: string | number }>({
 
   return (
     <div className="min-w-0 overflow-hidden rounded-[28px] border border-[rgba(123,97,63,0.12)] bg-[rgba(255,253,248,0.92)] shadow-[0_18px_40px_rgba(33,29,22,0.08)]">
-      <table className={`w-full table-fixed ${compact ? "text-[13px]" : "text-sm"}`}>
+      <div className="md:hidden">
+        {paginatedData.length === 0 ? (
+          <div className="px-4 py-8 text-center text-sm text-slate-500">No data available</div>
+        ) : (
+          <div className="space-y-3 p-3">
+            {paginatedData.map((row) => {
+              const rowActions = actions
+                ? actions.filter((action) => !action.hidden?.(row))
+                : [];
+
+              return (
+                <article
+                  key={String(row.id)}
+                  className="rounded-[22px] border border-[rgba(123,97,63,0.12)] bg-white/85 p-3 shadow-sm"
+                >
+                  <div className="space-y-2.5">
+                    {columns.map((col) => (
+                      <div
+                        key={String(col.key)}
+                        className="grid grid-cols-[5.5rem,minmax(0,1fr)] items-start gap-2"
+                      >
+                        <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">
+                          {col.label}
+                        </p>
+                        <div className="min-w-0 text-sm leading-5 text-slate-700">
+                          {renderCellContent(col, row)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {rowActions.length > 0 ? (
+                    <div className="mt-3 flex flex-wrap gap-2 border-t border-[rgba(123,97,63,0.1)] pt-3">
+                      {rowActions.map((action) => (
+                        <button
+                          key={action.label}
+                          type="button"
+                          onClick={() => action.onClick(row)}
+                          className={`rounded-xl px-3 py-2 text-xs font-semibold transition ${
+                            action.label.toLowerCase().includes("delete")
+                              ? "border border-red-200 bg-red-50 text-red-600 hover:bg-red-100"
+                              : "border border-teal-200 bg-teal-50 text-teal-700 hover:bg-teal-100"
+                          }`}
+                        >
+                          {action.label}
+                        </button>
+                      ))}
+                    </div>
+                  ) : null}
+                </article>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      <table className={`hidden w-full table-fixed md:table ${compact ? "text-[13px]" : "text-sm"}`}>
         <colgroup>
           {columns.map((col) => (
             <col key={String(col.key)} />
@@ -289,7 +345,7 @@ function DataTable<T extends { id: string | number }>({
       </table>
 
       <div
-        className={`flex flex-wrap items-center justify-between gap-3 border-t border-[rgba(123,97,63,0.1)] bg-[rgba(250,247,241,0.82)] ${
+        className={`flex flex-col items-stretch gap-3 border-t border-[rgba(123,97,63,0.1)] bg-[rgba(250,247,241,0.82)] md:flex-row md:flex-wrap md:items-center md:justify-between ${
           compact ? "px-4 py-3" : "px-4 py-4"
         }`}
       >
@@ -308,7 +364,7 @@ function DataTable<T extends { id: string | number }>({
           </select>
         </div>
 
-        <div className={compact ? "text-[13px] leading-6" : "text-sm leading-6"}>
+        <div className={compact ? "text-[13px] leading-6 md:text-left" : "text-sm leading-6"}>
           Page {effectivePage} of {totalPages}
         </div>
 

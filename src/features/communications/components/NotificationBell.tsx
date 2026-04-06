@@ -77,7 +77,7 @@ export default function NotificationBell() {
       <button
         type="button"
         onClick={handleOpen}
-        className="relative flex h-12 w-12 items-center justify-center rounded-full border border-white/70 bg-white/80 shadow-sm transition hover:-translate-y-0.5 hover:bg-white"
+        className="relative flex h-11 w-11 items-center justify-center rounded-full border border-white/70 bg-white/80 shadow-sm transition hover:-translate-y-0.5 hover:bg-white sm:h-12 sm:w-12"
       >
         <svg
           viewBox="0 0 24 24"
@@ -100,7 +100,7 @@ export default function NotificationBell() {
       </button>
 
       {open ? (
-        <div className="float-in absolute right-0 z-[95] mt-3 w-[340px] rounded-[24px] border border-[rgba(123,97,63,0.14)] bg-[rgba(255,253,248,1)] p-3 shadow-[0_28px_56px_rgba(33,29,22,0.22)]">
+        <div className="float-in absolute right-0 z-[95] mt-3 w-[min(20rem,calc(100vw-2rem))] rounded-[24px] border border-[rgba(123,97,63,0.14)] bg-[rgba(255,253,248,1)] p-3 shadow-[0_28px_56px_rgba(33,29,22,0.22)] sm:w-[340px]">
           <div className="mb-3 flex items-center justify-between gap-3 px-1">
             <div>
               <p className="text-sm font-semibold text-slate-900">Notifications</p>

@@ -107,12 +107,13 @@ export default function HeaderPunchActions() {
 
   return (
     <>
-      <div className="flex items-center gap-2">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center md:gap-2">
         <AttendanceDayMessage status={dayData.status} compact />
-        <div className="flex items-start gap-2">
-          <div className="flex flex-col items-center gap-1">
+        <div className="grid grid-cols-2 gap-2 md:flex md:items-start">
+          <div className="flex min-w-0 flex-col gap-1">
             <Button
               size="sm"
+              className="w-full md:w-auto"
               disabled={loading || submitting !== "" || !canPunchIn}
               isLoading={submitting === "IN"}
               onClick={() => handlePunch("IN")}
@@ -120,15 +121,16 @@ export default function HeaderPunchActions() {
               Punch In
             </Button>
             {latestPunchLabel?.label === "Punch In" ? (
-              <span className="text-[11px] text-slate-500">
+              <span className="text-[11px] text-slate-500 md:text-center">
                 Punch In: {latestPunchLabel.value}
               </span>
             ) : null}
           </div>
-          <div className="flex flex-col items-center gap-1">
+          <div className="flex min-w-0 flex-col gap-1">
             <Button
               size="sm"
               variant="outline"
+              className="w-full md:w-auto"
               disabled={loading || submitting !== "" || !canPunchOut}
               isLoading={submitting === "OUT"}
               onClick={() => handlePunch("OUT")}
@@ -136,7 +138,7 @@ export default function HeaderPunchActions() {
               Punch Out
             </Button>
             {latestPunchLabel?.label === "Punch Out" ? (
-              <span className="text-[11px] text-slate-500">
+              <span className="text-[11px] text-slate-500 md:text-center">
                 Punch Out: {latestPunchLabel.value}
               </span>
             ) : null}

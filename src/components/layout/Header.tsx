@@ -12,6 +12,7 @@ type HeaderProps = {
     name?: string;
     role?: UserRole;
   };
+  onMenuToggle?: () => void;
 };
 
 const pageTitles: Array<{ match: RegExp; title: string }> = [
@@ -40,7 +41,7 @@ const pageTitles: Array<{ match: RegExp; title: string }> = [
   { match: /^\/leaves\/my$/, title: "My Leaves" },
 ];
 
-const Header = ({ user }: HeaderProps) => {
+const Header = ({ user, onMenuToggle }: HeaderProps) => {
   const navigate = useNavigate();
   const location = useLocation();
   const [open, setOpen] = useState(false);
@@ -102,56 +103,82 @@ const Header = ({ user }: HeaderProps) => {
 
   return (
     <>
-      <header className="relative z-40 px-5 pt-5 md:px-8">
-        <div className="surface-panel relative isolate flex min-h-[76px] items-center justify-between rounded-[28px] px-5 py-4">
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.32em] text-teal-700/75">
+      <header className="relative z-40 px-4 pt-4 sm:px-5 md:px-8 md:pt-5">
+        <div className="surface-panel relative isolate flex min-h-[64px] items-center gap-2.5 rounded-[24px] px-3 py-2.5 md:hidden">
+          <button
+            type="button"
+            onClick={onMenuToggle}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-white/70 bg-white/85 text-slate-700 shadow-sm transition hover:-translate-y-0.5 hover:bg-white"
+            aria-label="Open navigation menu"
+          >
+            <span className="space-y-1.5">
+              <span className="block h-0.5 w-5 rounded-full bg-current" />
+              <span className="block h-0.5 w-5 rounded-full bg-current" />
+              <span className="block h-0.5 w-5 rounded-full bg-current" />
+            </span>
+          </button>
+
+          <div className="min-w-0 flex-1">
+            <p className="text-[7px] font-bold uppercase tracking-[0.12em] text-teal-700/75">
               Employee Management
             </p>
-            <h1 className="mt-1 text-xl font-extrabold tracking-tight text-slate-800">
+            <h1 className="mt-0.5 truncate text-[1rem] font-extrabold tracking-tight text-slate-800">
               {pageTitle}
             </h1>
           </div>
+        </div>
 
-          <div className="flex items-center gap-3">
-            {canUseSelfAttendance ? <HeaderPunchActions /> : null}
-            <NotificationBell />
+        <div className="surface-panel relative isolate hidden rounded-[28px] px-5 py-4 md:block">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="min-w-0">
+              <p className="text-[11px] font-bold uppercase tracking-[0.32em] text-teal-700/75">
+                Employee Management
+              </p>
+              <h1 className="mt-1 text-xl font-extrabold tracking-tight text-slate-800">
+                {pageTitle}
+              </h1>
+            </div>
 
-            <div className="relative" ref={dropdownRef}>
-              <button
-                onClick={() => setOpen(!open)}
-                className="flex items-center gap-3 rounded-full border border-white/70 bg-white/80 px-3 py-2 shadow-sm transition hover:-translate-y-0.5 hover:bg-white"
-              >
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[linear-gradient(135deg,#0f766e_0%,#d97706_100%)] text-sm font-bold text-white shadow-sm">
-                  {initial}
-                </div>
+            <div className="flex items-center gap-3">
+              {canUseSelfAttendance ? <HeaderPunchActions /> : null}
+              <NotificationBell />
 
-                <div className="text-left">
-                  <p className="text-sm font-semibold text-slate-800">
-                    {user?.name || "User"}
-                  </p>
-                  <p className="text-xs capitalize tracking-wide text-slate-500">
-                    {user?.role || "role"}
-                  </p>
-                </div>
-              </button>
+              <div className="relative" ref={dropdownRef}>
+                <button
+                  onClick={() => setOpen(!open)}
+                  className="flex items-center gap-3 rounded-full border border-white/70 bg-white/80 px-3 py-2 shadow-sm transition hover:-translate-y-0.5 hover:bg-white"
+                >
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[linear-gradient(135deg,#0f766e_0%,#d97706_100%)] text-sm font-bold text-white shadow-sm">
+                    {initial}
+                  </div>
 
-              {open && (
-                <div className="float-in absolute right-0 z-[90] mt-3 w-48 rounded-2xl border border-[rgba(123,97,63,0.12)] bg-[rgba(255,253,248,1)] p-2 shadow-[0_20px_40px_rgba(33,29,22,0.16)]">
-                  <button
-                    onClick={openProfile}
-                    className="w-full rounded-xl px-4 py-2.5 text-left text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
-                  >
-                    View Profile
-                  </button>
-                  <button
-                    onClick={handleLogout}
-                    className="w-full rounded-xl px-4 py-2.5 text-left text-sm font-semibold text-rose-600 transition hover:bg-rose-50"
-                  >
-                    Logout
-                  </button>
-                </div>
-              )}
+                  <div className="text-left">
+                    <p className="text-sm font-semibold text-slate-800">
+                      {user?.name || "User"}
+                    </p>
+                    <p className="text-xs capitalize tracking-wide text-slate-500">
+                      {user?.role || "role"}
+                    </p>
+                  </div>
+                </button>
+
+                {open && (
+                  <div className="float-in absolute right-0 z-[90] mt-3 w-48 rounded-2xl border border-[rgba(123,97,63,0.12)] bg-[rgba(255,253,248,1)] p-2 shadow-[0_20px_40px_rgba(33,29,22,0.16)]">
+                    <button
+                      onClick={openProfile}
+                      className="w-full rounded-xl px-4 py-2.5 text-left text-sm font-semibold text-slate-700 transition hover:bg-slate-100"
+                    >
+                      View Profile
+                    </button>
+                    <button
+                      onClick={handleLogout}
+                      className="w-full rounded-xl px-4 py-2.5 text-left text-sm font-semibold text-rose-600 transition hover:bg-rose-50"
+                    >
+                      Logout
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
