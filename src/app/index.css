@@ -1,0 +1,132 @@
+@import url("https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #f5f1e8;
+  --surface: rgba(255, 252, 246, 0.9);
+  --surface-strong: #fffdf8;
+  --border: rgba(123, 97, 63, 0.14);
+  --text: #1f2937;
+  --primary: #0f766e;
+  --primary-strong: #115e59;
+  --accent: #d97706;
+  --shadow-soft: 0 18px 45px rgba(38, 33, 24, 0.08);
+}
+
+@layer base {
+  html {
+    min-height: 100%;
+    background:
+      radial-gradient(circle at top left, rgba(15, 118, 110, 0.14), transparent 28%),
+      radial-gradient(circle at top right, rgba(217, 119, 6, 0.12), transparent 24%),
+      linear-gradient(180deg, #faf7f1 0%, #f5f1e8 100%);
+  }
+
+  body {
+    min-height: 100vh;
+    font-family: "Manrope", sans-serif;
+    color: var(--text);
+    background: transparent;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    line-height: 1.55;
+    word-spacing: 0.04em;
+    overflow: hidden;
+  }
+
+  #root {
+    min-height: 100vh;
+    overflow: hidden;
+  }
+
+  ::selection {
+    background: rgba(15, 118, 110, 0.18);
+    color: #134e4a;
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(15, 118, 110, 0.35) transparent;
+  }
+
+  *::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background: rgba(15, 118, 110, 0.28);
+    border-radius: 999px;
+  }
+
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+}
+
+@layer utilities {
+  .app-shell {
+    background:
+      radial-gradient(circle at left top, rgba(15, 118, 110, 0.08), transparent 22%),
+      linear-gradient(180deg, rgba(255, 252, 246, 0.82) 0%, rgba(245, 241, 232, 0.78) 100%);
+    overflow: hidden;
+  }
+
+  .surface-panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-soft);
+    backdrop-filter: blur(18px);
+  }
+
+  .page-enter {
+    animation: page-enter 320ms ease-out;
+  }
+
+  .float-in {
+    animation: float-in 260ms ease-out;
+  }
+
+  .hide-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .hide-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .content-shell > div > div:first-child > h1,
+  .content-shell > div > div:first-child > h2,
+  .content-shell > div > div:first-child > p,
+  .content-shell > div > div:first-child > div:first-child > h1,
+  .content-shell > div > div:first-child > div:first-child > h2,
+  .content-shell > div > div:first-child > div:first-child > p {
+    display: none;
+  }
+}
+
+@keyframes page-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes float-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
