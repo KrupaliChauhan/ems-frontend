@@ -56,18 +56,18 @@ export default function ProjectDetails() {
   const [errorOpen, setErrorOpen] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
 
-  const members = useMemo(() => project?.employees ?? [], [project]);
+  const members = useMemo(() => project?.members ?? project?.employees ?? [], [project]);
   const canManage = useMemo(() => {
     if (!hasAccess(role, "projectManage")) {
       return false;
     }
 
     if (role === "teamLeader") {
-      return String(project?.createdBy?._id ?? "") === String(user?.id ?? "");
+      return String(project?.projectLeader?._id ?? project?.createdBy?._id ?? "") === String(user?.id ?? "");
     }
 
     return true;
-  }, [project?.createdBy?._id, role, user?.id]);
+  }, [project?.createdBy?._id, project?.projectLeader?._id, role, user?.id]);
 
   const loadProject = async () => {
     if (!projectId) return;
@@ -271,10 +271,10 @@ export default function ProjectDetails() {
                   Time limit: {project.timeLimit}
                 </span>
                 <span className="px-3 py-1 rounded-full border border-slate-200 bg-slate-50 text-slate-700">
-                  Team Leader: {project.createdBy?.name ?? "-"}
+                  Project Leader: {project.projectLeader?.name ?? project.createdBy?.name ?? "-"}
                 </span>
                 <span className="px-3 py-1 rounded-full border border-slate-200 bg-slate-50 text-slate-700">
-                  Members: {project.employees?.length ?? 0}
+                  Members: {project.members?.length ?? project.employees?.length ?? 0}
                 </span>
               </div>
             </div>
@@ -362,10 +362,10 @@ export default function ProjectDetails() {
                   </p>
                 </div>
                 <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
-                  <p className="text-xs text-slate-500">Team Leader</p>
+                  <p className="text-xs text-slate-500">Project Leader</p>
                   <p className="text-sm text-slate-800 mt-1">
-                    {project.createdBy?.name ?? "-"}
-                    {project.createdBy?.email ? ` (${project.createdBy.email})` : ""}
+                    {project.projectLeader?.name ?? project.createdBy?.name ?? "-"}
+                    {(project.projectLeader?.email ?? project.createdBy?.email) ? ` (${project.projectLeader?.email ?? project.createdBy?.email})` : ""}
                   </p>
                 </div>
               </div>
@@ -399,9 +399,9 @@ export default function ProjectDetails() {
               </p>
 
               <div className="mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4">
-                {project.employees?.length ? (
+                {(project.members?.length ?? project.employees?.length) ? (
                   <ul className="space-y-2 text-sm">
-                    {project.employees.map((m) => (
+                    {(project.members ?? project.employees).map((m) => (
                       <li
                         key={m._id}
                         className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1"
@@ -427,7 +427,7 @@ export default function ProjectDetails() {
         <TaskDetailsModal
           open={Boolean(taskViewing)}
           onClose={() => setTaskViewing(null)}
-          viewMode="normal"
+          viewMode="worklog"
           canAddWorkLog={false}
           currentUserId={user?.id}
           onWorkLogChanged={loadTasks}

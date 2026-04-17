@@ -11,12 +11,15 @@ import Loader from "../../../components/ui/Loader";
 import { InputField } from "../../../components/ui/InputField";
 import FormRequiredNote from "../../../components/ui/FormRequiredNote";
 import SelectDropdown from "../../../components/ui/SelectDropdown";
+import DatePicker from "../../../components/ui/DatePicker";
+import { useToast } from "../../../components/ui/ToastProvider";
 import { Controller } from "react-hook-form";
 
 import {
   createUser,
   fetchUserById,
   fetchUsers,
+  fetchActiveUsers,
   updateUser,
   deleteUser,
   updateUserStatus,
@@ -39,6 +42,7 @@ type Row = {
   role: string;
   department: string;
   designation: string;
+  isActive: boolean;
   status: string;
 };
 
@@ -46,6 +50,8 @@ type FormValues = {
   name: string;
   email: string;
   role: UserRole;
+  joiningDate: string;
+  teamLeaderId: string;
   departmentId: string;
   designationId: string;
 };
@@ -54,6 +60,7 @@ const Users = () => {
   const { user } = getSession();
   const canViewUsers = hasAccess(user?.role, "usersPage");
   const canManageUsers = hasAccess(user?.role, "usersManage");
+  const { showToast } = useToast();
 
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(false);
@@ -86,6 +93,9 @@ const Users = () => {
   const [desigOptions, setDesigOptions] = useState<
     { id: string; name: string }[]
   >([]);
+  const [teamLeaderOptions, setTeamLeaderOptions] = useState<
+    { id: string; name: string }[]
+  >([]);
 
   const {
     control,
@@ -99,6 +109,8 @@ const Users = () => {
       name: "",
       email: "",
       role: "employee",
+      joiningDate: "",
+      teamLeaderId: "",
       departmentId: "",
       designationId: "",
     },
@@ -107,6 +119,7 @@ const Users = () => {
   const departmentId = watch("departmentId");
   const role = watch("role");
   const isAdminRole = role === "admin";
+  const isEmployeeRole = role === "employee";
 
   const columns: Column<Row>[] = useMemo(
     () => [
@@ -120,26 +133,44 @@ const Users = () => {
         label: "Status",
         render: (value, row) => (
           canManageUsers ? (
-            <select
-              value={value}
-              title="select"
-              onChange={async (e) => {
+            <button
+              type="button"
+              onClick={async () => {
                 try {
-                  await updateUserStatus(
-                    row._id,
-                    e.target.value as "Active" | "Inactive",
+                  const updated = await updateUserStatus(row._id, !row.isActive);
+                  setRows((current) =>
+                    current.map((item) =>
+                      item._id === row._id
+                        ? {
+                            ...item,
+                            isActive: updated.isActive ?? !row.isActive,
+                            status: updated.status ?? (updated.isActive ? "Active" : "Inactive"),
+                          }
+                        : item,
+                    ),
                   );
-                  load();
-                } catch {
-                  setErrorMsg("Status update failed");
+                  showToast(
+                    `${row.name} is now ${updated.status ?? (!row.isActive ? "Active" : "Inactive")}.`,
+                    "success",
+                  );
+                } catch (error) {
+                  const message =
+                    error instanceof Error ? error.message : "Status update failed";
+                  setErrorMsg(message);
                   setErrorOpen(true);
+                  showToast(message, "error");
                 }
               }}
-              className="border rounded px-2 py-1"
+              className={`relative inline-flex h-7 w-12 items-center rounded-full transition ${
+                row.isActive ? "bg-emerald-500" : "bg-slate-300"
+              }`}
             >
-              <option value="Active">Active</option>
-              <option value="Inactive">Inactive</option>
-            </select>
+              <span
+                className={`inline-block h-5 w-5 rounded-full bg-white transition ${
+                  row.isActive ? "translate-x-6" : "translate-x-1"
+                }`}
+              />
+            </button>
           ) : (
             <span>{String(value)}</span>
           )
@@ -180,6 +211,7 @@ const Users = () => {
           role: u.role,
           department: u.department || "-",
           designation: u.designation || "-",
+          isActive: typeof u.isActive === "boolean" ? u.isActive : u.status !== "Inactive",
           status: u.status ?? "Active",
         }));
 
@@ -194,8 +226,16 @@ const Users = () => {
   };
 
   const loadDropdowns = async () => {
-    const dep = await listDepartments({ page: 1, limit: 1000 });
+    const [dep, activeUsers] = await Promise.all([
+      listDepartments({ page: 1, limit: 1000 }),
+      fetchActiveUsers(),
+    ]);
     setDeptOptions(dep.items.map((d) => ({ id: d.id, name: d.name })));
+    setTeamLeaderOptions(
+      (activeUsers.items || [])
+        .filter((item) => item.role === "teamLeader")
+        .map((item) => ({ id: item._id, name: item.name })),
+    );
     setDesigOptions([]);
   };
 
@@ -229,6 +269,14 @@ const Users = () => {
   }, [isAdminRole, setValue]);
 
   useEffect(() => {
+    if (isEmployeeRole) {
+      return;
+    }
+
+    setValue("teamLeaderId", "");
+  }, [isEmployeeRole, setValue]);
+
+  useEffect(() => {
     load();
   }, [page, limit]);
 
@@ -259,6 +307,8 @@ const Users = () => {
       name: "",
       email: "",
       role: "employee",
+      joiningDate: new Date().toISOString().slice(0, 10),
+      teamLeaderId: "",
       departmentId: "",
       designationId: "",
     });
@@ -275,13 +325,19 @@ const Users = () => {
     setEditLoading(true);
 
     try {
-      const [user, departments] = await Promise.all([
+      const [user, departments, activeUsers] = await Promise.all([
         fetchUserById(row._id),
         listDepartments({ page: 1, limit: 1000 }),
+        fetchActiveUsers(),
       ]);
 
       setDeptOptions(
         departments.items.map((d) => ({ id: d.id, name: d.name })),
+      );
+      setTeamLeaderOptions(
+        (activeUsers.items || [])
+          .filter((item) => item.role === "teamLeader" && item._id !== row._id)
+          .map((item) => ({ id: item._id, name: item.name })),
       );
 
       if (user.role !== "admin" && user.departmentId) {
@@ -302,6 +358,8 @@ const Users = () => {
         name: user.name,
         email: user.email,
         role: user.role,
+        joiningDate: user.joiningDate ? user.joiningDate.slice(0, 10) : "",
+        teamLeaderId: user.teamLeaderId || "",
         departmentId: user.departmentId,
         designationId: user.designationId,
       });
@@ -342,9 +400,10 @@ const Users = () => {
           name: data.name.trim(),
           email: data.email.trim(),
           role: data.role,
+          joiningDate: data.joiningDate,
+          teamLeaderId: data.role === "employee" ? data.teamLeaderId || undefined : undefined,
           departmentId: data.role === "admin" ? undefined : data.departmentId,
           designationId: data.role === "admin" ? undefined : data.designationId,
-          status: "Active",
         });
 
       } else {
@@ -352,6 +411,8 @@ const Users = () => {
           name: data.name.trim(),
           email: data.email.trim(),
           role: data.role,
+          joiningDate: data.joiningDate,
+          teamLeaderId: data.role === "employee" ? data.teamLeaderId || undefined : undefined,
           departmentId: data.role === "admin" ? undefined : data.departmentId,
           designationId: data.role === "admin" ? undefined : data.designationId,
         });
@@ -359,26 +420,39 @@ const Users = () => {
       }
 
       setAddOpen(false);
+      showToast(
+        editingUserId ? "User updated successfully." : "User created successfully.",
+        "success",
+      );
       load();
     } catch (err) {
-      setErrorMsg(err instanceof Error ? err.message : "User save failed");
+      const message = err instanceof Error ? err.message : "User save failed";
+      setErrorMsg(message);
       setErrorOpen(true);
+      showToast(message, "error");
     } finally {
       setSaving(false);
     }
   };
   const confirmDelete = async () => {
     if (!canManageUsers || !selectedUserId) return;
+    try {
+      await deleteUser(selectedUserId);
 
-    await deleteUser(selectedUserId);
+      setDeleteOpen(false);
+      setSelectedUserId(null);
 
-    setDeleteOpen(false);
-    setSelectedUserId(null);
+      setSuccessMsg("User deleted successfully.");
+      setSuccessOpen(true);
+      showToast("User deleted successfully.", "success");
 
-    setSuccessMsg("User deleted successfully.");
-    setSuccessOpen(true);
-
-    load();
+      load();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Failed to delete user";
+      setErrorMsg(message);
+      setErrorOpen(true);
+      showToast(message, "error");
+    }
   };
 
   const clearFilters = () => {
@@ -475,6 +549,22 @@ const Users = () => {
           />
 
           <Controller
+            name="joiningDate"
+            control={control}
+            rules={{ required: "Joining date is required" }}
+            render={({ field }) => (
+              <DatePicker
+                label="Joining Date"
+                required
+                value={field.value}
+                onChange={field.onChange}
+                error={errors.joiningDate?.message}
+                max={new Date().toISOString().slice(0, 10)}
+              />
+            )}
+          />
+
+          <Controller
             name="role"
             control={control}
             render={({ field }) => (
@@ -491,6 +581,27 @@ const Users = () => {
               />
             )}
           />
+
+          {isEmployeeRole ? (
+            <Controller
+              name="teamLeaderId"
+              control={control}
+              render={({ field }) => (
+                <SelectDropdown
+                  label="Team Leader"
+                  value={field.value}
+                  onChange={field.onChange}
+                  options={[
+                    { label: "Select Team Leader", value: "" },
+                    ...teamLeaderOptions.map((leader) => ({
+                      label: leader.name,
+                      value: leader.id,
+                    })),
+                  ]}
+                />
+              )}
+            />
+          ) : null}
 
           <Controller
             name="departmentId"

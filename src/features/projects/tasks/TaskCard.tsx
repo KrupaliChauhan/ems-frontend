@@ -206,7 +206,17 @@ export default function TaskCard({
             </option>
           ))}
         </select>
-        <div className="w-8" />
+        {canManage && task.status !== "Completed" ? (
+          <button
+            type="button"
+            onClick={() => onChangeStatus(task, "Completed")}
+            className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-emerald-700"
+          >
+            Mark Complete
+          </button>
+        ) : (
+          <div className="w-8" />
+        )}
       </div>
     </div>
   );

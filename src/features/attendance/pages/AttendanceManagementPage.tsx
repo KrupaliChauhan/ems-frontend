@@ -1,12 +1,12 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Navigate } from "react-router-dom";
 import DataTable from "../../../components/table/DataTable";
 import type { Column } from "../../../components/table/DataTable";
 import Button from "../../../components/ui/Button";
-import ConfirmDialog from "../../../components/ui/ConfirmDialog";
 import DatePicker from "../../../components/ui/DatePicker";
 import Loader from "../../../components/ui/Loader";
 import SelectDropdown from "../../../components/ui/SelectDropdown";
+import { useNotifier } from "../../../components/ui/useNotifier";
 import AttendanceStatusBadge from "../components/AttendanceStatusBadge";
 import {
   getAttendanceDashboard,
@@ -76,19 +76,20 @@ function getDepartmentLabel(employee: Row["employeeId"]) {
 
 export default function AttendanceManagementPage() {
   const { user } = getSession();
+  const { showError, showSuccess } = useNotifier();
   const isTeamLeader = user?.role === "teamLeader";
-  const canRecompute = hasAccess(user?.role, "attendancePolicy");
+  const canRecompute = hasAccess(user?.role, "attendanceManage");
   const now = new Date();
   const today = now.toISOString().slice(0, 10);
   const currentMonth = now.getMonth() + 1;
   const currentYear = now.getFullYear();
   const [loading, setLoading] = useState(false);
-  const [employees, setEmployees] = useState<Array<{ id: string; name: string; departmentId: string }>>([]);
+  const [employees, setEmployees] = useState<
+    Array<{ id: string; name: string; departmentId: string; joiningDate?: string | null }>
+  >([]);
   const [departments, setDepartments] = useState<DepartmentItem[]>([]);
   const [items, setItems] = useState<AttendanceDailySummary[]>([]);
   const [summary, setSummary] = useState<Record<string, number>>({});
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
 
   const [employeeId, setEmployeeId] = useState("");
   const [departmentId, setDepartmentId] = useState("");
@@ -101,6 +102,8 @@ export default function AttendanceManagementPage() {
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
   const [total, setTotal] = useState(0);
+  const listRequestRef = useRef(0);
+  const metaRequestRef = useRef(0);
 
   const yearOptions = useMemo(() => {
     return Array.from({ length: 5 }).map((_, index) => {
@@ -118,6 +121,9 @@ export default function AttendanceManagementPage() {
   }, [currentMonth, currentYear, year]);
 
   const loadMeta = async () => {
+    const requestId = metaRequestRef.current + 1;
+    metaRequestRef.current = requestId;
+
     try {
       const employeeRes = await getAttendanceEmployees();
       const derivedDepartments = new Map<string, DepartmentItem>();
@@ -139,20 +145,29 @@ export default function AttendanceManagementPage() {
         departmentItems = departmentRes.items || [];
       }
 
+      if (metaRequestRef.current !== requestId) {
+        return;
+      }
+
       setEmployees(
         (employeeRes.items || []).map((item) => ({
           id: item.id,
           name: item.name,
-          departmentId: item.department || ""
+          departmentId: item.department || "",
+          joiningDate: item.joiningDate || null
         }))
       );
       setDepartments(departmentItems);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to load filters");
+      if (metaRequestRef.current === requestId) {
+        showError(e instanceof Error ? e.message : "Failed to load filters");
+      }
     }
   };
 
   const loadData = async () => {
+    const requestId = listRequestRef.current + 1;
+    listRequestRef.current = requestId;
     setLoading(true);
     try {
       const [recordRes, summaryRes] = await Promise.all([
@@ -177,23 +192,31 @@ export default function AttendanceManagementPage() {
         })
       ]);
 
+      if (listRequestRef.current !== requestId) {
+        return;
+      }
+
       setItems(recordRes.items || []);
       setTotal(recordRes.total || 0);
       setSummary(summaryRes.summary || {});
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to load attendance management");
+      if (listRequestRef.current === requestId) {
+        showError(e instanceof Error ? e.message : "Failed to load attendance management");
+      }
     } finally {
-      setLoading(false);
+      if (listRequestRef.current === requestId) {
+        setLoading(false);
+      }
     }
   };
 
   useEffect(() => {
     loadMeta();
-  }, []);
+  }, [showError]);
 
   useEffect(() => {
     loadData();
-  }, [employeeId, departmentId, month, year, status, fromDate, toDate, page, limit]);
+  }, [departmentId, employeeId, fromDate, limit, month, page, showError, status, toDate, year]);
 
   useEffect(() => {
     if (Number(year) === currentYear && month && Number(month) > currentMonth) {
@@ -222,6 +245,11 @@ export default function AttendanceManagementPage() {
     if (!departmentId) return employees;
     return employees.filter((item) => item.departmentId === departmentId);
   }, [departmentId, employees]);
+  const selectedEmployee = useMemo(
+    () => employees.find((item) => item.id === employeeId) ?? null,
+    [employeeId, employees],
+  );
+  const minimumAllowedDate = selectedEmployee?.joiningDate?.slice(0, 10) || undefined;
 
   useEffect(() => {
     if (!departmentId) return;
@@ -273,7 +301,7 @@ export default function AttendanceManagementPage() {
 
   const handleRecomputeRange = async () => {
     if (!fromDate || !toDate) {
-      setError("Select both from date and to date to recompute attendance.");
+      showError("Select both from date and to date to recompute attendance.");
       return;
     }
 
@@ -283,10 +311,10 @@ export default function AttendanceManagementPage() {
         fromDate,
         toDate
       });
-      setSuccess(`Recomputed ${response.attendanceDaysProcessed} attendance day records.`);
+      showSuccess(`Recomputed ${response.attendanceDaysProcessed} attendance day records.`);
       await loadData();
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to recompute attendance");
+      showError(e instanceof Error ? e.message : "Failed to recompute attendance");
     }
   };
 
@@ -369,20 +397,31 @@ export default function AttendanceManagementPage() {
             label="From Date"
             value={fromDate}
             onChange={(value) => {
+              if (minimumAllowedDate && value && value < minimumAllowedDate) {
+                showError(`Attendance starts from joining date ${formatDate(minimumAllowedDate)}.`);
+                return;
+              }
               setFromDate(value);
               setPage(1);
             }}
+            min={minimumAllowedDate}
             max={today}
+            helperText={minimumAllowedDate ? `Joining date: ${formatDate(minimumAllowedDate)}` : undefined}
           />
           <DatePicker
             label="To Date"
             value={toDate}
             onChange={(value) => {
+              if (minimumAllowedDate && value && value < minimumAllowedDate) {
+                showError(`Attendance starts from joining date ${formatDate(minimumAllowedDate)}.`);
+                return;
+              }
               setToDate(value);
               setPage(1);
             }}
-            min={fromDate || undefined}
+            min={fromDate || minimumAllowedDate}
             max={today}
+            helperText={minimumAllowedDate ? `Joining date: ${formatDate(minimumAllowedDate)}` : undefined}
           />
           <div className="flex items-end">
             <Button variant="outline" onClick={clearFilters}>
@@ -406,7 +445,7 @@ export default function AttendanceManagementPage() {
                       const employee = row.employeeId;
                       const resolvedEmployeeId = typeof employee === "string" ? employee : employee?._id || employee?.id;
                       if (!resolvedEmployeeId) {
-                        setError("Employee id not available for recompute.");
+                        showError("Employee id not available for recompute.");
                         return;
                       }
 
@@ -415,10 +454,10 @@ export default function AttendanceManagementPage() {
                           employeeId: resolvedEmployeeId,
                           date: row.date
                         });
-                        setSuccess("Attendance day recomputed successfully.");
+                        showSuccess("Attendance day recomputed successfully.");
                         await loadData();
                       } catch (e) {
-                        setError(e instanceof Error ? e.message : "Failed to recompute attendance day");
+                        showError(e instanceof Error ? e.message : "Failed to recompute attendance day");
                       }
                     }
                   }
@@ -436,8 +475,6 @@ export default function AttendanceManagementPage() {
         />
       </div>
 
-      <ConfirmDialog open={!!error} title="Error" message={error} onConfirm={() => setError("")} onCancel={() => setError("")} />
-      <ConfirmDialog open={!!success} title="Success" message={success} mode="Success" onConfirm={() => setSuccess("")} onCancel={() => setSuccess("")} />
     </div>
   );
 }

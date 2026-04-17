@@ -23,7 +23,9 @@ export type ProjectItem = {
   timeLimit: string;
   startDate: string;
   status: ProjectStatus;
+  members: ProjectEmployee[];
   employees: ProjectEmployee[];
+  projectLeader?: ProjectLeader;
   createdBy?: ProjectLeader;
   createdAt?: string;
   updatedAt?: string;
@@ -40,7 +42,9 @@ export type ProjectListResponse = {
     startDate: string;
     timeLimit: string;
     status: ProjectStatus;
+    members: ProjectEmployee[];
     employees: ProjectEmployee[];
+    projectLeader?: ProjectLeader;
     createdBy?: ProjectLeader;
     createdAt?: string;
   }>;
@@ -52,15 +56,45 @@ export type ProjectPayload = {
   timeLimit: string;
   startDate: string; // "YYYY-MM-DD"
   status: ProjectStatus;
-  employees: string[]; // user ids
+  members: string[]; // user ids
 };
 
+function normalizeProjectItem<T extends {
+  members?: ProjectEmployee[];
+  employees?: ProjectEmployee[];
+  projectLeader?: ProjectLeader;
+  createdBy?: ProjectLeader;
+}>(project: T): T & {
+  members: ProjectEmployee[];
+  employees: ProjectEmployee[];
+  projectLeader?: ProjectLeader;
+  createdBy?: ProjectLeader;
+} {
+  const members = project.members && project.members.length > 0
+    ? project.members
+    : project.employees || [];
+  const projectLeader = project.projectLeader || project.createdBy;
+
+  return {
+    ...project,
+    members,
+    employees: members,
+    projectLeader,
+    createdBy: projectLeader
+  };
+}
+
 export async function createProject(payload: ProjectPayload) {
-  return apiRequest<{ message: string; projectId: string }>(
+  const response = await apiRequest<{ project: ProjectItem; projectId?: string }>(
     "/api/projects",
     "POST",
     payload,
   );
+
+  return {
+    projectId: response.projectId ?? response.project._id,
+    project: normalizeProjectItem(response.project)
+  };
 }
 
 export async function listProjects(params: {
@@ -76,30 +110,46 @@ export async function listProjects(params: {
     status: params.status || "all",
   });
 
-  return apiRequest<ProjectListResponse>(
+  const response = await apiRequest<ProjectListResponse>(
     `/api/projects?${q.toString()}`,
     "GET",
   );
+
+  return {
+    ...response,
+    items: response.items.map((project) => normalizeProjectItem(project))
+  };
 }
 
 export async function getProjectById(id: string) {
-  return apiRequest<ProjectItem>(`/api/projects/${id}`, "GET");
+  const response = await apiRequest<ProjectItem>(`/api/projects/${id}`, "GET");
+  return normalizeProjectItem(response);
 }
 export async function getProjects(page = 1, limit = 10) {
-  return apiRequest<{
+  const response = await apiRequest<{
     items: ProjectItem[];
     total: number;
     page: number;
     limit: number;
     totalPages: number;
   }>(`/api/projects?page=${page}&limit=${limit}`);
+
+  return {
+    ...response,
+    items: response.items.map((project) => normalizeProjectItem(project))
+  };
 }
 export async function updateProject(id: string, payload: ProjectPayload) {
-  return apiRequest<{ message: string; project: ProjectItem }>(
+  const response = await apiRequest<{ project: ProjectItem; projectId?: string }>(
     `/api/projects/${id}`,
     "PUT",
     payload,
   );
+
+  return {
+    projectId: response.projectId ?? response.project._id,
+    project: normalizeProjectItem(response.project)
+  };
 }
 
 export async function softDeleteProject(id: string) {
@@ -111,5 +161,8 @@ export async function myProjects(params?: { search?: string; status?: string }) 
     search: params?.search || "",
     status: params?.status || "all"
   });
-  return apiRequest<{ items: ProjectItem[] }>(`/api/projects/my?${qs.toString()}`, "GET");
+  const response = await apiRequest<{ items: ProjectItem[] }>(`/api/projects/my?${qs.toString()}`, "GET");
+  return {
+    items: response.items.map((project) => normalizeProjectItem(project))
+  };
 }

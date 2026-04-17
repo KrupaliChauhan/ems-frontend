@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Button from "../../../components/ui/Button";
-import ConfirmDialog from "../../../components/ui/ConfirmDialog";
 import Loader from "../../../components/ui/Loader";
+import { useNotifier } from "../../../components/ui/useNotifier";
 import { formatDate } from "../../../utils/date";
 import AttendanceDayMessage from "../components/AttendanceDayMessage";
 import {
@@ -24,13 +24,13 @@ function formatMinutes(totalMinutes: number) {
 
 export default function EmployeeAttendancePage() {
   const navigate = useNavigate();
+  const { showError } = useNotifier();
   const [loading, setLoading] = useState(false);
   const [dayData, setDayData] = useState<AttendanceDayResponse>({
     summary: null,
     punches: [],
     status: "PRESENT"
   });
-  const [error, setError] = useState("");
 
   const load = async () => {
     setLoading(true);
@@ -38,7 +38,7 @@ export default function EmployeeAttendancePage() {
       const data = await getMyDailyAttendance();
       setDayData(data);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to load attendance");
+      showError(e instanceof Error ? e.message : "Failed to load attendance");
     } finally {
       setLoading(false);
     }
@@ -46,7 +46,7 @@ export default function EmployeeAttendancePage() {
 
   useEffect(() => {
     load();
-  }, []);
+  }, [showError]);
 
   useEffect(() => {
     return subscribeAttendanceDayUpdate((updatedDayData) => {
@@ -104,6 +104,9 @@ export default function EmployeeAttendancePage() {
         {summary?.status === "LEAVE" ? (
           <p className="mt-3 text-sm text-slate-500">Punch actions are disabled because this date has an approved leave.</p>
         ) : null}
+        {!summary && dayData.message ? (
+          <p className="mt-3 text-sm text-slate-500">{dayData.message}</p>
+        ) : null}
       </div>
 
       {loading ? (
@@ -155,8 +158,6 @@ export default function EmployeeAttendancePage() {
           </div>
         </>
       )}
-
-      <ConfirmDialog open={!!error} title="Error" message={error} onConfirm={() => setError("")} onCancel={() => setError("")} />
     </div>
   );
 }

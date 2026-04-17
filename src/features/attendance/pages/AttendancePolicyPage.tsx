@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import Button from "../../../components/ui/Button";
-import ConfirmDialog from "../../../components/ui/ConfirmDialog";
 import FormRequiredNote from "../../../components/ui/FormRequiredNote";
 import { InputField } from "../../../components/ui/InputField";
 import Loader from "../../../components/ui/Loader";
+import { useNotifier } from "../../../components/ui/useNotifier";
 import { getSession, hasAccess } from "../../auth/services/auth";
 import { getAttendancePolicy, updateAttendancePolicy, type AttendancePolicy } from "../services/attendanceService";
 
@@ -46,6 +46,7 @@ function toFormState(policy: AttendancePolicy): PolicyFormState {
 
 export default function AttendancePolicyPage() {
   const { user } = getSession();
+  const { showError, showSuccess } = useNotifier();
   const isAuthorized = hasAccess(user?.role, "attendancePolicy");
 
   const [loading, setLoading] = useState(false);
@@ -61,9 +62,6 @@ export default function AttendancePolicyPage() {
     enableHolidayIntegration: true,
     enableLeaveIntegration: true
   });
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-
   useEffect(() => {
     const load = async () => {
       setLoading(true);
@@ -71,14 +69,14 @@ export default function AttendancePolicyPage() {
         const policy = await getAttendancePolicy();
         setForm(toFormState(policy));
       } catch (e) {
-        setError(e instanceof Error ? e.message : "Failed to load attendance policy");
+        showError(e instanceof Error ? e.message : "Failed to load attendance policy");
       } finally {
         setLoading(false);
       }
     };
 
     load();
-  }, []);
+  }, [showError]);
 
   if (!isAuthorized) {
     return <Navigate to="/attendance" replace />;
@@ -107,9 +105,9 @@ export default function AttendancePolicyPage() {
         enableHolidayIntegration: form.enableHolidayIntegration,
         enableLeaveIntegration: form.enableLeaveIntegration
       });
-      setSuccess("Attendance policy updated successfully.");
+      showSuccess("Attendance policy updated successfully.");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to update attendance policy");
+      showError(e instanceof Error ? e.message : "Failed to update attendance policy");
     } finally {
       setSaving(false);
     }
@@ -191,9 +189,6 @@ export default function AttendancePolicyPage() {
           </div>
         </div>
       )}
-
-      <ConfirmDialog open={!!error} title="Error" message={error} onConfirm={() => setError("")} onCancel={() => setError("")} />
-      <ConfirmDialog open={!!success} title="Success" message={success} mode="Success" onConfirm={() => setSuccess("")} onCancel={() => setSuccess("")} />
     </div>
   );
 }

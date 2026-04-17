@@ -2,6 +2,7 @@ import { Suspense, lazy } from "react";
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import Layout from "../components/layout/Layout";
 import Loader from "../components/ui/Loader";
+import { ToastProvider } from "../components/ui/ToastProvider";
 import { DepartmentProvider } from "../features/department/context/department-context";
 import { DesignationProvider } from "../features/designation/context/designation-provider";
 import {
@@ -78,10 +79,11 @@ function ProtectedRoute({ children, allowedRoles, redirectTo = "/" }: ProtectedR
 function App() {
   return (
     <BrowserRouter>
-      <DepartmentProvider>
-        <DesignationProvider>
-          <Suspense fallback={<Loader variant="fullscreen" label="Loading page..." />}>
-            <Routes>
+      <ToastProvider>
+        <DepartmentProvider>
+          <DesignationProvider>
+            <Suspense fallback={<Loader variant="fullscreen" label="Loading page..." />}>
+              <Routes>
               <Route path="/" element={<Login />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/reset-password" element={<ResetPassword />} />
@@ -327,10 +329,11 @@ function App() {
                 }
               />
               <Route path="*" element={<Navigate to="/dashboard" replace />} />
-            </Routes>
-          </Suspense>
-        </DesignationProvider>
-      </DepartmentProvider>
+              </Routes>
+            </Suspense>
+          </DesignationProvider>
+        </DepartmentProvider>
+      </ToastProvider>
     </BrowserRouter>
   );
 }

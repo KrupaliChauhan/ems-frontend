@@ -6,8 +6,12 @@ export type UserItem = {
   name: string;
   email: string;
   role: UserRole;
+  isActive?: boolean;
   status?: "Active" | "Inactive";
   isDeleted?: boolean;
+  joiningDate?: string | null;
+  teamLeaderId?: string | null;
+  teamLeaderName?: string;
   department?: string;
   designation?: string;
 };
@@ -15,6 +19,9 @@ export type UserItem = {
 export type UserDetail = UserItem & {
   departmentId: string;
   designationId: string;
+  teamLeaderId: string;
+  teamLeaderName?: string;
+  joiningDate: string;
 };
 
 export type UsersResponse = {
@@ -52,6 +59,7 @@ export async function fetchProjectAssignableEmployees() {
       name: string;
       email: string;
       role: UserRole;
+      isActive?: boolean;
       status?: "Active" | "Inactive";
     }[];
   }>("/api/users/project-assignable-employees", "GET");
@@ -65,6 +73,8 @@ export async function createUser(payload: {
   name: string;
   email: string;
   role: UserRole;
+  joiningDate: string;
+  teamLeaderId?: string;
   departmentId?: string;
   designationId?: string;
 }) {
@@ -87,9 +97,9 @@ export async function fetchActiveUsers() {
 }
 export async function updateUserStatus(
   id: string,
-  status: "Active" | "Inactive",
+  isActive: boolean,
 ) {
-  return apiRequest(`/api/users/${id}/status`, "PATCH", { status });
+  return apiRequest<UserItem>(`/api/users/${id}/status`, "PATCH", { isActive });
 }
 export async function updateUser(
   id: string,
@@ -97,9 +107,12 @@ export async function updateUser(
     name: string;
     email: string;
     role: UserRole;
+    joiningDate: string;
+    teamLeaderId?: string;
     departmentId?: string;
     designationId?: string;
-    status: "Active" | "Inactive";
+    status?: "Active" | "Inactive";
+    isActive?: boolean;
   },
 ) {
   return apiRequest(`/api/users/${id}`, "PUT", payload);

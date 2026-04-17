@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import Modal from "../../../components/ui/Modal";
 import ConfirmDialog from "../../../components/ui/ConfirmDialog";
 import FormRequiredNote from "../../../components/ui/FormRequiredNote";
@@ -30,6 +31,7 @@ const ProjectFormModal = ({
   onClose,
   onSuccess,
 }: Props) => {
+  const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
   const [users, setUsers] = useState<UserItem[]>([]);
@@ -74,10 +76,10 @@ const ProjectFormModal = ({
 
   const loadUsers = async () => {
     try {
-      const res = await fetchProjectAssignableEmployees()
+      const res = await fetchProjectAssignableEmployees();
       setUsers(res.items);
     } catch (e: unknown) {
-      let message = "Failed to load team members";
+      let message = "Failed to load employees";
       if (e instanceof Error) {
         message = e.message;
       } else if (typeof e === "string") {
@@ -129,7 +131,7 @@ const ProjectFormModal = ({
       setStatus(p.status ?? "pending");
 
       setSelectedEmployees(
-        Array.isArray(p.employees) ? p.employees.map((e) => e._id) : [],
+        Array.isArray(p.members) ? p.members.map((member) => member._id) : [],
       );
     } catch (e: unknown) {
       let message = "Failed to load project";
@@ -164,7 +166,7 @@ const ProjectFormModal = ({
       e.description = "Description is required";
     if (!timeLimit.trim()) e.timeLimit = "Time limit is required";
     if (!startDate) e.startDate = "Start date is required";
-    if (!selectedEmployees.length) e.employees = "Select at least 1 team member";
+    if (!selectedEmployees.length) e.employees = "Select at least 1 project member";
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -177,7 +179,7 @@ const ProjectFormModal = ({
       timeLimit: timeLimit.trim(),
       startDate,
       status,
-      employees: selectedEmployees,
+      members: selectedEmployees,
     };
 
     setLoading(true);
@@ -189,6 +191,9 @@ const ProjectFormModal = ({
         await updateProject(projectId, payload);
       }
       onSuccess();
+      if (mode === "add") {
+        navigate("/projects");
+      }
     } catch (e: unknown) {
       let message = "Save failed";
       if (e instanceof Error) {
@@ -295,13 +300,13 @@ const ProjectFormModal = ({
           {/* Multi select */}
           <div className="w-full">
             <label className="mb-1.5 block text-sm font-medium text-slate-900">
-              Team Members (Multi Select) <span className="text-red-500">*</span>
+              Project Members (Multi Select) <span className="text-red-500">*</span>
             </label>
 
             <div className="rounded-xl border border-slate-200 bg-white p-3">
               <div className="max-h-44 overflow-auto space-y-2">
                 {members.length === 0 ? (
-                  <p className="text-sm text-slate-500">No team members found</p>
+                  <p className="text-sm text-slate-500">No employees found</p>
                 ) : (
                   members.map((opt) => {
                     const id = String(opt.value);

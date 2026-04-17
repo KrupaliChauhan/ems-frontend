@@ -64,7 +64,7 @@ const ProjectsAdmin = () => {
   const columns: Column<Row>[] = useMemo(
     () => [
       { key: "name", label: "Project" },
-      { key: "teamLeader", label: "Team Leader" },
+      { key: "teamLeader", label: "Project Leader" },
       { key: "startDate", label: "Start Date" },
       { key: "timeLimit", label: "Time Limit" },
       { key: "status", label: "Status" },
@@ -88,12 +88,12 @@ const ProjectsAdmin = () => {
         id: idx + 1 + (page - 1) * limit,
         _id: p._id,
         name: p.name,
-        teamLeader: p.createdBy?.name ?? "-",
-        createdById: p.createdBy?._id ?? "",
+        teamLeader: p.projectLeader?.name ?? p.createdBy?.name ?? "-",
+        createdById: p.projectLeader?._id ?? p.createdBy?._id ?? "",
         startDate: formatDate(p.startDate),
         timeLimit: p.timeLimit,
         status: p.status,
-        employeesCount: String(p.employees?.length ?? 0),
+        employeesCount: String(p.members?.length ?? p.employees?.length ?? 0),
       }));
 
       setRows(mapped);

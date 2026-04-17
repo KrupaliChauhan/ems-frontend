@@ -64,6 +64,7 @@ export default function LeaveRequestFormModal({ open, leaveTypes, balances, holi
     watch,
     handleSubmit,
     reset,
+    setValue,
     formState: { errors, isSubmitting },
   } = useForm<FormValues>({
     defaultValues: {
@@ -94,6 +95,8 @@ export default function LeaveRequestFormModal({ open, leaveTypes, balances, holi
   const fromDate = watch("fromDate");
   const toDate = watch("toDate");
   const dayUnit = watch("dayUnit");
+  const isMultiDaySelection =
+    !!fromDate && !!toDate && new Date(toDate).getTime() > new Date(fromDate).getTime();
 
   const selectedType = useMemo(
     () => leaveTypes.find((item) => item.id === leaveTypeId) ?? null,
@@ -109,6 +112,12 @@ export default function LeaveRequestFormModal({ open, leaveTypes, balances, holi
   );
 
   const totalDays = calculateDays(fromDate, toDate, dayUnit, holidayDateKeys);
+
+  useEffect(() => {
+    if (isMultiDaySelection && dayUnit === "HALF") {
+      setValue("dayUnit", "FULL", { shouldDirty: true, shouldTouch: true });
+    }
+  }, [dayUnit, isMultiDaySelection, setValue]);
 
   const submit = async (values: FormValues) => {
     setServerError("");
@@ -206,10 +215,15 @@ export default function LeaveRequestFormModal({ open, leaveTypes, balances, holi
                 label="Day Unit"
                 value={field.value}
                 onChange={(value) => field.onChange(value as "FULL" | "HALF")}
-                options={[
-                  { label: "Full Day", value: "FULL" },
-                  { label: "Half Day", value: "HALF" },
-                ]}
+                options={
+                  isMultiDaySelection
+                    ? [{ label: "Full Day", value: "FULL" }]
+                    : [
+                        { label: "Full Day", value: "FULL" },
+                        { label: "Half Day", value: "HALF" },
+                      ]
+                }
+                helperText={isMultiDaySelection ? "Half-day leave is only available for a single day." : undefined}
               />
             )}
           />

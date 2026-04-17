@@ -2,13 +2,14 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Button from "../../../components/ui/Button";
 import Loader from "../../../components/ui/Loader";
-import ConfirmDialog from "../../../components/ui/ConfirmDialog";
+import { useNotifier } from "../../../components/ui/useNotifier";
 import { getAttendanceDashboard } from "../services/attendanceService";
 import { getSession, hasAccess } from "../../auth/services/auth";
 
 export default function AdminAttendanceOverview() {
   const navigate = useNavigate();
   const { user } = getSession();
+  const { showError } = useNotifier();
   const canSelfAttend = user?.role === "employee" || user?.role === "teamLeader" || user?.role === "HR";
   const canManageAttendanceRecords = hasAccess(user?.role, "attendanceManage");
   const canManageAttendancePolicy = hasAccess(user?.role, "attendancePolicy");
@@ -16,7 +17,6 @@ export default function AdminAttendanceOverview() {
   const [loading, setLoading] = useState(false);
   const [summary, setSummary] = useState<Record<string, number>>({});
   const [totalRecords, setTotalRecords] = useState(0);
-  const [error, setError] = useState("");
 
   useEffect(() => {
     const load = async () => {
@@ -29,14 +29,14 @@ export default function AdminAttendanceOverview() {
         setSummary(data.summary || {});
         setTotalRecords(data.totalRecords || 0);
       } catch (e) {
-        setError(e instanceof Error ? e.message : "Failed to load attendance overview");
+        showError(e instanceof Error ? e.message : "Failed to load attendance overview");
       } finally {
         setLoading(false);
       }
     };
 
     load();
-  }, []);
+  }, [showError]);
 
   const cards = [
     { label: "Present", value: summary.PRESENT ?? 0, tone: "bg-emerald-50 text-emerald-700" },
@@ -89,8 +89,6 @@ export default function AdminAttendanceOverview() {
           </div>
         </>
       )}
-
-      <ConfirmDialog open={!!error} title="Error" message={error} onConfirm={() => setError("")} onCancel={() => setError("")} />
     </div>
   );
 }

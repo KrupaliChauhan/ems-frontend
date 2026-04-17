@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import Button from "../../../components/ui/Button";
-import ConfirmDialog from "../../../components/ui/ConfirmDialog";
+import { useNotifier } from "../../../components/ui/useNotifier";
 import AttendanceDayMessage from "./AttendanceDayMessage";
 import {
   addAttendancePunch,
@@ -20,18 +20,11 @@ function formatPunchTime(value?: string | null) {
 }
 
 function getLocalPunchTimestamp() {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = String(now.getMonth() + 1).padStart(2, "0");
-  const day = String(now.getDate()).padStart(2, "0");
-  const hours = String(now.getHours()).padStart(2, "0");
-  const minutes = String(now.getMinutes()).padStart(2, "0");
-  const seconds = String(now.getSeconds()).padStart(2, "0");
-
-  return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}`;
+  return new Date().toISOString();
 }
 
 export default function HeaderPunchActions() {
+  const { showError, showSuccess } = useNotifier();
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState<"" | "IN" | "OUT">("");
   const [dayData, setDayData] = useState<AttendanceDayResponse>({
@@ -40,7 +33,6 @@ export default function HeaderPunchActions() {
     status: "PRESENT"
   });
   const [policy, setPolicy] = useState<AttendancePolicy | null>(null);
-  const [error, setError] = useState("");
 
   const load = async () => {
     setLoading(true);
@@ -49,7 +41,7 @@ export default function HeaderPunchActions() {
       setDayData(data);
       publishAttendanceDayUpdate(data);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to load attendance");
+      showError(e instanceof Error ? e.message : "Failed to load attendance");
     } finally {
       setLoading(false);
     }
@@ -65,16 +57,15 @@ export default function HeaderPunchActions() {
         const response = await getAttendancePolicy();
         setPolicy(response);
       } catch (e) {
-        setError(e instanceof Error ? e.message : "Failed to load attendance policy");
+        showError(e instanceof Error ? e.message : "Failed to load attendance policy");
       }
     };
 
     loadPolicy();
-  }, []);
+  }, [showError]);
 
   const handlePunch = async (punchType: "IN" | "OUT") => {
     setSubmitting(punchType);
-    setError("");
     try {
       await addAttendancePunch({
         punchType,
@@ -82,8 +73,9 @@ export default function HeaderPunchActions() {
         source: "web"
       });
       await load();
+      showSuccess(`Punch ${punchType === "IN" ? "in" : "out"} recorded successfully.`);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to add punch");
+      showError(e instanceof Error ? e.message : "Failed to add punch");
     } finally {
       setSubmitting("");
     }
@@ -145,8 +137,6 @@ export default function HeaderPunchActions() {
           </div>
         </div>
       </div>
-
-      <ConfirmDialog open={!!error} title="Error" message={error} onConfirm={() => setError("")} onCancel={() => setError("")} />
     </>
   );
 }

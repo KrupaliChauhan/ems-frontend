@@ -32,6 +32,8 @@ export type SessionUser = {
   name?: string;
   email: string;
   role?: UserRole;
+  joiningDate?: string | null;
+  teamLeaderId?: string | null;
 };
 
 export function saveSession(payload: { token: string; user: SessionUser }) {

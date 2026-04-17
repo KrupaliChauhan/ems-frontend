@@ -5,7 +5,7 @@ import type { Column } from "../../../components/table/DataTable";
 import Button from "../../../components/ui/Button";
 import Loader from "../../../components/ui/Loader";
 import SelectDropdown from "../../../components/ui/SelectDropdown";
-import ConfirmDialog from "../../../components/ui/ConfirmDialog";
+import { useNotifier } from "../../../components/ui/useNotifier";
 import AttendanceStatusBadge from "../components/AttendanceStatusBadge";
 import { getMyMonthlyAttendance, type AttendanceDailySummary } from "../services/attendanceService";
 import { formatDate } from "../../../utils/date";
@@ -41,28 +41,37 @@ function formatDuration(totalMinutes: number) {
 
 export default function MyAttendancePage() {
   const { user } = getSession();
+  const { showError } = useNotifier();
   const now = new Date();
+  const currentMonth = now.getMonth() + 1;
+  const currentYear = now.getFullYear();
   const [month, setMonth] = useState(String(now.getMonth() + 1));
   const [year, setYear] = useState(String(now.getFullYear()));
   const [loading, setLoading] = useState(false);
   const [items, setItems] = useState<AttendanceDailySummary[]>([]);
   const [summary, setSummary] = useState<Record<string, number>>({});
-  const [error, setError] = useState("");
   const requestRef = useRef(0);
 
   const yearOptions = useMemo(() => {
     const currentYear = new Date().getFullYear();
     return Array.from({ length: 5 }).map((_, index) => {
-      const value = String(currentYear - 2 + index);
+      const value = String(currentYear - index);
       return { label: value, value };
-    });
+    }).reverse();
   }, []);
+
+  const availableMonthOptions = useMemo(() => {
+    if (Number(year) !== currentYear) {
+      return monthOptions;
+    }
+
+    return monthOptions.filter((option) => Number(option.value) <= currentMonth);
+  }, [currentMonth, currentYear, year]);
 
   const load = async () => {
     const requestId = requestRef.current + 1;
     requestRef.current = requestId;
     setLoading(true);
-    setError("");
 
     try {
       const data = await getMyMonthlyAttendance({
@@ -76,7 +85,7 @@ export default function MyAttendancePage() {
       setSummary(data.summary || {});
     } catch (e) {
       if (requestRef.current !== requestId) return;
-      setError(e instanceof Error ? e.message : "Failed to load monthly attendance");
+      showError(e instanceof Error ? e.message : "Failed to load monthly attendance");
     } finally {
       if (requestRef.current === requestId) {
         setLoading(false);
@@ -86,7 +95,13 @@ export default function MyAttendancePage() {
 
   useEffect(() => {
     load();
-  }, [month, year]);
+  }, [month, year, showError]);
+
+  useEffect(() => {
+    if (Number(year) === currentYear && Number(month) > currentMonth) {
+      setMonth(String(currentMonth));
+    }
+  }, [currentMonth, currentYear, month, year]);
 
   const clearFilters = () => {
     setMonth(String(now.getMonth() + 1));
@@ -134,7 +149,7 @@ export default function MyAttendancePage() {
               label="Month"
               value={month}
               onChange={setMonth}
-              options={monthOptions}
+              options={availableMonthOptions}
               className="bg-transparent shadow-none"
             />
           </div>
@@ -170,8 +185,6 @@ export default function MyAttendancePage() {
         {loading ? <Loader variant="overlay" label="Loading monthly attendance..." /> : null}
         <DataTable columns={columns} data={rows} />
       </div>
-
-      <ConfirmDialog open={!!error} title="Error" message={error} onConfirm={() => setError("")} onCancel={() => setError("")} />
     </div>
   );
 }

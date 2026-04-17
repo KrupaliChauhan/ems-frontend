@@ -48,6 +48,8 @@ const Login = () => {
           name: res.user.name,
           email: res.user.email,
           role: res.user.role,
+          joiningDate: res.user.joiningDate ?? null,
+          teamLeaderId: res.user.teamLeaderId ?? null,
         },
       });
       navigate("/dashboard", { replace: true });

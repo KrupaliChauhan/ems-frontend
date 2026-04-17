@@ -85,6 +85,8 @@ export type AttendanceDayResponse = {
   summary: AttendanceDailySummary | null;
   punches: AttendancePunchItem[];
   status: AttendanceDayUiStatus;
+  joiningDate?: string | null;
+  message?: string;
 };
 
 export type AttendanceMonthlyResponse = {
@@ -109,6 +111,7 @@ export type AttendanceEmployeeOption = {
   id: string;
   name: string;
   email: string;
+  joiningDate?: string | null;
   department?: string | null;
   designation?: string | null;
 };
