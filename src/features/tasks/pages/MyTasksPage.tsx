@@ -16,6 +16,7 @@ import {
 import { getSession } from "../../auth/services/auth";
 
 import { formatDate } from "../../../utils/date";
+import { getTaskStatusOptions } from "../utils/taskPermissions";
 
 const columns: Array<{ key: TaskStatus; label: string }> = [
   { key: "Pending", label: "Pending" },
@@ -231,21 +232,12 @@ export default function MyTasksPage() {
                             <SelectDropdown
                               value={field.value}
                               onChange={(v) => {
-                                changeStatus(t._id, v as TaskStatus);
+                                field.onChange(v);
+                                if (v !== t.status) {
+                                  changeStatus(t._id, v as TaskStatus);
+                                }
                               }}
-                              options={[
-                                { label: "Pending", value: "Pending" },
-                                {
-                                  label: "In Progress",
-                                  value: "In Progress",
-                                },
-                                { label: "In Review", value: "In Review" },
-                                {
-                                  label: "Completed",
-                                  value: "Completed",
-                                  disabled: true,
-                                },
-                              ]}
+                              options={getTaskStatusOptions("member", t.status)}
                             />
                           )}
                         />

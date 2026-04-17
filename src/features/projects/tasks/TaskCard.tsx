@@ -1,24 +1,17 @@
 import { useEffect, useRef, useState } from "react";
 import type { TaskItem, TaskStatus } from "../../tasks/services/taskService";
 import { formatDate } from "../../../utils/date";
+import { getTaskStatusOptions, type TaskActor } from "../../tasks/utils/taskPermissions";
 
 type Props = {
   task: TaskItem;
   canManage: boolean;
-  isEmployee: boolean;
   currentUserId?: string | null;
   onView: (task: TaskItem) => void;
   onEdit: (task: TaskItem) => void;
   onDelete: (task: TaskItem) => void;
   onChangeStatus: (task: TaskItem, status: TaskStatus) => void;
 };
-
-const statusOptions: TaskStatus[] = [
-  "Pending",
-  "In Progress",
-  "In Review",
-  "Completed",
-];
 
 function isOverdue(task: TaskItem) {
   if (!task.dueDate) return false;
@@ -48,7 +41,6 @@ function priorityBadge(priority: TaskItem["priority"]) {
 export default function TaskCard({
   task,
   canManage,
-  isEmployee,
   currentUserId,
   onView,
   onEdit,
@@ -58,6 +50,8 @@ export default function TaskCard({
   const overdue = isOverdue(task);
   const isAssignedToCurrentUser =
     !!currentUserId && String(task.assignedTo?._id ?? "") === String(currentUserId);
+  const actor: TaskActor = canManage ? "teamLeader" : isAssignedToCurrentUser ? "member" : "viewer";
+  const statusOptions = getTaskStatusOptions(actor, task.status);
   const [menuOpen, setMenuOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement | null>(null);
 
@@ -194,29 +188,20 @@ export default function TaskCard({
         <select
           value={task.status}
           onChange={(e) => onChangeStatus(task, e.target.value as TaskStatus)}
+          disabled={statusOptions.length === 0}
           className="h-9 min-w-[170px] flex-1 rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none focus:ring-2 focus:ring-slate-200"
         >
           {statusOptions.map((s) => (
             <option
-              key={s}
-              value={s}
-              disabled={isEmployee && s === "Completed"}
+              key={s.value}
+              value={s.value}
+              disabled={s.disabled}
             >
-              {s}
+              {s.label}
             </option>
           ))}
         </select>
-        {canManage && task.status !== "Completed" ? (
-          <button
-            type="button"
-            onClick={() => onChangeStatus(task, "Completed")}
-            className="rounded-lg bg-emerald-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-emerald-700"
-          >
-            Mark Complete
-          </button>
-        ) : (
-          <div className="w-8" />
-        )}
+        <div className="w-8" />
       </div>
     </div>
   );

@@ -28,7 +28,6 @@ export default function ProjectDetails() {
   const { user } = getSession();
 
   const role = user?.role ?? "employee";
-  const isEmployee = role === "employee";
 
   const [tab, setTab] = useState<TabKey>("tasks");
 
@@ -381,7 +380,6 @@ export default function ProjectDetails() {
               <TaskBoard
                 tasks={tasks}
                 canManage={canManage}
-                isEmployee={isEmployee}
                 currentUserId={user?.id}
                 onView={openViewTask}
                 onEdit={openEditTask}

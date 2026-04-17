@@ -4,7 +4,6 @@ import TaskCard from "./TaskCard";
 type Props = {
   tasks: TaskItem[];
   canManage: boolean;
-  isEmployee: boolean;
   currentUserId?: string | null;
   onView: (task: TaskItem) => void;
   onEdit: (task: TaskItem) => void;
@@ -22,7 +21,6 @@ const columns: Array<{ key: TaskStatus; label: string }> = [
 export default function TaskBoard({
   tasks,
   canManage,
-  isEmployee,
   currentUserId,
   onView,
   onEdit,
@@ -66,7 +64,6 @@ export default function TaskBoard({
                   key={t._id}
                   task={t}
                   canManage={canManage}
-                  isEmployee={isEmployee}
                   currentUserId={currentUserId}
                   onView={onView}
                   onEdit={onEdit}
